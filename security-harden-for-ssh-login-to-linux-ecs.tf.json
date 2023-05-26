@@ -1,0 +1,278 @@
+{
+    "terraform": {
+        "required_providers": [
+            {
+                "huaweicloud": {
+                    "source": "huawei.com/provider/huaweicloud",
+                    "version": ">=1.44.1"
+                }
+            }
+        ]
+    },
+    "provider": {
+        "huaweicloud": {
+            "cloud": "myhuaweicloud.com",
+            "endpoints": {
+                "iam": "iam.ap-southeast-3.myhuaweicloud.com",
+                "dns": "dns.ap-southeast-3.myhuaweicloud.com",
+                "bss": "bss.myhuaweicloud.com"
+            },
+            "insecure": true,
+            "region": "ap-southeast-3",
+            "auth_url": "https://iam.ap-southeast-3.myhuaweicloud.com/v3"
+        }
+    },
+    "variable": {
+        "vpc_name": {
+            "default": "security-harden-for-ssh-login-to-linux-ecs-demo",
+            "description": "Virtual Private Cloud (VPC) name. This template uses a newly created VPC and the VPC name must be unique. Value range: 1 to 57 characters, including letters, digits, underscores (_), hyphens (-), and periods (.). Default value: security-harden-for-ssh-login-to-linux-ecs-demo",
+            "type": "string",
+            "nullable": "false",
+            "validation": {
+                "condition": "${length(regexall(\"^[\\\\w\\\\.-]{1,57}$\",var.vpc_name))>0}",
+                "error_message": "Invalid input. Please re-enter."
+            }
+        },
+        "secgroup_name": {
+            "default": "security-harden-for-ssh-login-to-linux-ecs-demo",
+            "description": "Security group name. This template uses a newly created security group. Value range: 1 to 64 characters, including letters, digits, underscores (_), hyphens (-), and periods (.). Default value: security-harden-for-ssh-login-to-linux-ecs-demo",
+            "type": "string",
+            "nullable": "false",
+            "validation": {
+                "condition": "${length(regexall(\"^[\\\\w\\\\.-]{1,64}$\",var.secgroup_name))>0}",
+                "error_message": "Invalid input. Please re-enter."
+            }
+        },
+        "ecs_name": {
+            "default": "security-harden-for-ssh-login-to-linux-ecs-demo",
+            "description": "Elastic Cloud Server (ECS) name, which must be unique. Value range: 1 to 54 characters, including letters, digits, underscores (_), hyphens (-), and periods (.). Default value: security-harden-for-ssh-login-to-linux-ecs-demo",
+            "type": "string",
+            "nullable": "false",
+            "validation": {
+                "condition": "${length(regexall(\"^[a-zA-Z0-9_\\\\.-]{1,54}$\",var.ecs_name))>0}",
+                "error_message": "Invalid input. Please re-enter."
+            }
+        },
+        "ecs_count": {
+            "default": 1,
+            "description": "ECS quantity. Value range: An integer greater than or equal to 1. Default value: 1",
+            "type": "number",
+            "nullable": "false",
+            "validation": {
+                "condition": "${length(regexall(\"^[1-9]+$\",var.ecs_count))>0}",
+                "error_message": "Invalid input. Please re-enter."
+            }
+        },
+        "ecs_flavor": {
+            "default": "s6.large.2",
+            "description": "ECS flavor. For more flavors, see the deployment guide. Default value: s6.large.2 (2u4g)",
+            "type": "string",
+            "nullable": "false",
+            "validation": {
+                "condition": "${length(regexall(\"^([a-z][a-z0-9]{0,3}\\\\.)(small\\\\.|medium\\\\.|(x||[1-9][0-9]{0,1}x)large\\\\.)[1-9][0-9]{0,1}$\",var.ecs_flavor))>0}",
+                "error_message": "Invalid input. Please re-enter."
+            }
+        },
+        "ecs_image": {
+            "default": "CentOS 8.2 64bit",
+            "description": "ECS image OS. For more image OSs, see the deployment guide. Default value: CentOS 8.2 64bit ",
+            "type": "string",
+            "nullable": "false",
+             "validation": {
+                "condition": "${length(regexall(\"^([A-Za-z0-9\\\\s\\\\.])+([A-Za-z0-9])$\",var.ecs_image))>0}",
+                "error_message": "Invalid input. Please re-enter."
+            }
+        },
+        "ecs_password": {
+            "default": "",
+            "description": "ECS initial password. After an ECS is created, log in to the ECS console and change the password by referring to the deployment guide. Value range: 8 to 26 characters, containing at least three of the following character types: uppercase letters, lowercase letters, digits, and special characters (!@$%^-_=+[{}]:,./?), and cannot contain the username or the username spelled backwards. Administrator: root",
+            "type": "string",
+            "nullable": "false",
+            "sensitive": "true"
+        },
+        "ecs_volume_size": {
+            "default": 100,
+            "description": "ECS system disk size in GB. Value range: 40 to 1024. Default value: 100",
+            "type": "number",
+            "nullable": "false",
+             "validation": {
+                "condition": "${length(regexall(\"^([4-9]\\\\d|[1-9]\\\\d{2}|10[0-1][0-9]|102[0-4])$\",var.ecs_volume_size))>0}",
+                "error_message": "Invalid input, please re-enter."
+            }
+        },
+        "ecs_volume_type": {
+            "default": "SAS",
+            "description": "ECS system disk type. Value options: ESSD (Extreme SSD), SSD (Ultra-high I/O), GPSSD (General Purpos SSD) or SAS (High I/O). Default value: SAS (High I/O)",
+            "type": "string",
+            "nullable": "false",
+            "validation": {
+                "condition": "${contains([\"ESSD\",\"GPSSD\",\"SSD\",\"SAS\"], var.ecs_volume_type)}",
+                "error_message": "Invalid input, please re-enter."
+            }
+        },
+        "eip_size": {
+            "default": 5,
+            "description": "Elastic IP (EIP) size. This template uses a pay-per-use EIP billed by bandwidth in Mbit/s. Value range: 1 to 2000. Default value: 5",
+            "type": "number",
+            "nullable": "false",
+            "validation": {
+                "condition": "${length(regexall(\"^(1[0-9]{3}|[1-9][0-9]{0,2}|2000)$\",var.eip_size))>0}",
+                "error_message": "Invalid input. Please re-enter."
+            }
+        },
+        "keypair_name": {
+            "default": "",
+            "description": "Key pair name, which must be unique. Value range: 1 to 250 characters, containing only letters, digits, underscores (_), and hyphens (-) ",
+            "type": "string",
+            "nullable": "false",
+            "validation": {
+                "condition": "${length(regexall(\"^[a-zA-Z0-9_-]{1,250}$\",var.keypair_name))>0}",
+                "error_message": "Invalid input. Please re-enter."
+            }
+        },
+        "charging_mode": {
+            "default": "postPaid",
+            "description": "Billing mode. By default, fees are automatically deducted. Value options: prePaid (yearly/monthly) or postPaid (pay-per-use). Default value: postPaid",
+            "type": "string",
+            "nullable": "false",
+             "validation": {
+                "condition": "${contains([\"postPaid\",\"prePaid\"], var.charging_mode)}",
+                "error_message": "Invalid input, please re-enter."
+            }
+        },
+        "charge_period_unit": {
+            "default": "month",
+            "description": "Billing period unit. This parameter is mandatory when the billing mode is set to prePaid. Value options: month or year. Default value: month",
+            "type": "string",
+            "nullable": "false",
+            "validation": {
+                "condition": "${contains([\"month\",\"year\"], var.charge_period_unit)}",
+                "error_message": "Invalid input, please re-enter."
+            }
+        },
+        "charge_period": {
+            "default": 1,
+            "description": "Billing period. This parameter is mandatory when the billing mode is set to prePaid. Value range: 1 to 3 (year) or 1 to 9 (month). Default value: 1",
+            "type": "number",
+            "nullable": "false",
+            "validation": {
+                "condition": "${length(regexall(\"^[1-9]$\",var.charge_period))>0}",
+                "error_message": "Invalid input, please re-enter."
+            }
+        }
+    },
+    "data": {
+        "huaweicloud_availability_zones": {
+            "availability_zones": {}
+        },
+        "huaweicloud_images_image": {
+            "images_image": {
+                "most_recent": true,
+                "name": "${var.ecs_image}",
+                "visibility": "public"
+            }
+        }
+    },
+    "resource": {
+        "huaweicloud_vpc": {
+            "vpc": {
+                "cidr": "192.168.0.0/16",
+                "name": "${var.vpc_name}"
+            }
+        },
+        "huaweicloud_vpc_subnet": {
+            "vpc_subnet": {
+                "cidr": "192.168.10.0/24",
+                "gateway_ip": "192.168.10.1",
+                "name": "${var.vpc_name}_subnet",
+                "availability_zone": "${data.huaweicloud_availability_zones.availability_zones.names[0]}",
+                "vpc_id": "${huaweicloud_vpc.vpc.id}"
+            }
+        },
+        "huaweicloud_networking_secgroup": {
+            "networking_secgroup": {
+                "name": "${var.secgroup_name}"
+            }
+        },
+        "huaweicloud_networking_secgroup_rule": {
+            "networking_secgroup_rule_ping": {
+                "description": "Allows ping to test ECS connectivity.",
+                "direction": "ingress",
+                "ethertype": "ipv4",
+                "protocol": "icmp",
+                "remote_ip_prefix": "0.0.0.0/0",
+                "security_group_id": "${huaweicloud_networking_secgroup.networking_secgroup.id}"
+            },
+            "networking_secgroup_rule_ssh": {
+                "description": "Allows SSH access to Linux ECSs.",
+                "direction": "ingress",
+                "ethertype": "ipv4",
+                "ports": "5000",
+                "protocol": "tcp",
+                "remote_ip_prefix": "192.168.0.0/16",
+                "security_group_id": "${huaweicloud_networking_secgroup.networking_secgroup.id}"
+            }
+        },
+        "huaweicloud_vpc_eip": {
+            "vpc_eip": {
+                "name": "${var.vpc_name}_000${count.index+1}",
+                "count": "${var.ecs_count}",
+                "charging_mode": "${var.charging_mode}",
+                "period_unit": "${var.charge_period_unit}",
+                "period": "${var.charge_period}",
+                "bandwidth": [
+                    {
+                        "charge_mode": "bandwidth",
+                        "name": "${var.ecs_name}-bandwidth",
+                        "share_type": "PER",
+                        "size": "${var.eip_size}"
+                    }
+                ],
+                "publicip": [
+                    {
+                        "type": "5_bgp"
+                    }
+                ]
+            }
+        },
+        "huaweicloud_compute_instance": {
+            "compute_instance": {
+                "eip_id": "${huaweicloud_vpc_eip.vpc_eip[count.index].id}",
+                "availability_zone": "${data.huaweicloud_availability_zones.availability_zones.names[0]}",
+                "count": "${var.ecs_count}",
+                "key_pair": "${huaweicloud_kps_keypair.kps_keypair[count.index].id}",
+                "flavor_id": "${var.ecs_flavor}",
+                "image_id": "${data.huaweicloud_images_image.images_image.id}",
+                "name": "${var.ecs_name}_000${count.index+1}",
+                "network": {
+                    "uuid": "${huaweicloud_vpc_subnet.vpc_subnet.id}"
+                },
+                "security_group_ids": [
+                    "${huaweicloud_networking_secgroup.networking_secgroup.id}"
+                ],
+                "system_disk_size": "${var.ecs_volume_size}",
+                "system_disk_type": "${var.ecs_volume_type}",
+                "charging_mode": "${var.charging_mode}",
+                "period_unit": "${var.charge_period_unit}",
+                "period": "${var.charge_period}",
+                "auto_pay": true,
+                "user_data": "#!/bin/bash\necho 'root:${var.ecs_password}'|chpasswd\nwget -P /root/ https://documentation-samples.obs.myhuaweicloud.com/solution-as-code-publicbucket/solution-as-code-moudle/security-harden-for-ssh-login-to-linux-ecs/userdata/security_hardening.sh\nchmod 700 /root/security_hardening.sh\nsh /root/security_hardening.sh\nrm -rf /root/security_hardening.sh"
+            }
+        },
+        "huaweicloud_kms_key": {
+            "kms_key": {
+                "count": "${var.ecs_count}",
+                "key_alias": "${var.keypair_name}_000${count.index+1}"
+            }
+        },
+        "huaweicloud_kps_keypair": {
+            "kps_keypair": {
+                "name": "${var.keypair_name}_000${count.index+1}",
+                "count": "${var.ecs_count}",
+                "scope": "account",
+                "encryption_type": "kms",
+                "kms_key_name": "${huaweicloud_kms_key.kms_key[count.index].key_alias}"
+            }
+        }
+    }
+}
